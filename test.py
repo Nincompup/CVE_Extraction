@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
+from flask_cors import CORS
+
 import pandas as pd
 import spacy
 import os
@@ -12,6 +14,8 @@ except OSError:
     nlp = spacy.load("en_core_web_sm")
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
+
 
 nlp = spacy.load("en_core_web_sm")
 
