@@ -11,13 +11,10 @@ except OSError:
     spacy.cli.download("en_core_web_sm")
     nlp = spacy.load("en_core_web_sm")
 
-# Initialize the Flask app
 app = Flask(__name__)
 
-# Load the spaCy model for NER
 nlp = spacy.load("en_core_web_sm")
 
-# Helper function to safely retrieve nested values from JSON data
 def get_safe_value(data, keys, default=""):
     for key in keys:
         if isinstance(data, list):
@@ -31,7 +28,6 @@ def get_safe_value(data, keys, default=""):
             return default
     return data if data else default
 
-# Helper function to extract structured fields from CVE description using NER and keyword matching
 def extract_from_description(description_text):
     doc = nlp(description_text)
     extracted_data = {
@@ -62,7 +58,6 @@ def extract_from_description(description_text):
         elif ent.label_ == "EVENT":
             extracted_data["Attack Type"].append(ent.text)
 
-    # Keyword matching for additional categories
     for token in doc:
         text = token.text.lower()
         if any(impact in text for impact in impact_keywords):
@@ -79,7 +74,6 @@ def extract_from_description(description_text):
 
     return extracted_data
 
-# Helper function to extract detailed CVE information
 def extract_cve_details(cve_json):
     base_info = {
         "CVE ID": get_safe_value(cve_json, ["cveMetadata", "cveId"]),
@@ -106,7 +100,6 @@ def extract_cve_details(cve_json):
         "Reference Links": ', '.join([ref["url"] for ref in get_safe_value(cve_json, ["containers", "cna", "references"], []) if "url" in ref])
     }
 
-    # Extract fields from the description using NER and keyword matching
     description = base_info["Description"]
     if description:
         ner_extracted = extract_from_description(description)
@@ -114,14 +107,12 @@ def extract_cve_details(cve_json):
 
     return base_info
 
-# Flask endpoint to get CVE information
 @app.route('/get_cve_info', methods=['GET'])
 def get_cve_info():
     cve_id = request.args.get('cve_id')
     if not cve_id:
         return jsonify({"error": "Please provide a valid CVE ID"}), 400
     
-    # Fetch CVE details from the CVE API
     url = f"https://cveawg.mitre.org/api/cve/{cve_id}"
     response = requests.get(url)
     
@@ -132,7 +123,6 @@ def get_cve_info():
     else:
         return jsonify({"error": f"Failed to fetch CVE data, status code: {response.status_code}"}), 500
 
-# Run the Flask app
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Use the PORT environment variable on Render
+    port = int(os.environ.get('PORT', 5000))  
     app.run(host='0.0.0.0', port=port, debug=True)
