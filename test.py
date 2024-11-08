@@ -174,20 +174,24 @@ def get_cve_info():
     if not cve_id:
         return jsonify({"error": "Please provide a valid CVE ID"}), 400
 
-    # Fetch CVE data from the external CVE API
-    url = f"https://cveawg.mitre.org/api/cve/{cve_id}"
-    headers = {"Accept": "application/json"}
-    response = requests.get(url, headers=headers)
-
-    if response.status_code == 200:
+    try:
+        # Fetch CVE data from the external CVE API
+        url = f"https://cveawg.mitre.org/api/cve/{cve_id}"
+        headers = {"Accept": "application/json"}
+        response = requests.get(url, headers=headers)
+        
+        response.raise_for_status()  # Raises HTTPError for bad responses (e.g., 404, 500)
         cve_json = response.json()
+        
+        # Extract CVE details
         cve_details = extract_cve_details(cve_json)
         return jsonify(cve_details)
-    else:
-        return jsonify({
-            "error": f"Failed to fetch CVE data, status code: {response.status_code}",
-            "details": response.text
-        }), 500
+    except requests.exceptions.RequestException as e:
+        # Catch any issues with the external request
+        return jsonify({"error": "Failed to fetch CVE data from the CVE API", "details": str(e)}), 500
+    except Exception as e:
+        # General exception handling for unexpected errors
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
 
 # Run the Flask app
 if __name__ == '__main__':
